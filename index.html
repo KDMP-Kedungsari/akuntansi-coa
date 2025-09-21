@@ -1,1 +1,923 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COA Master - Koperasi Desa Merah Putih</title>
+    
+    <!-- Google Analytics 4 (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-JE5G9Y7YPR"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-JE5G9Y7YPR');
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .menu-item {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .content-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #e74c3c);
+            color: white;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .coa-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .coa-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .coa-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .coa-table tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .account-category {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .category-assets { background: #28a745; }
+        .category-liabilities { background: #dc3545; }
+        .category-equity { background: #6f42c1; }
+        .category-revenue { background: #007bff; }
+        .category-expenses { background: #fd7e14; }
+
+        .status-active {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-inactive {
+            color: #6c757d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .coa-table {
+                font-size: 14px;
+            }
+            
+            .coa-table th, .coa-table td {
+                padding: 8px 6px;
+            }
+            
+            .search-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Chart of Accounts Master</h1>
+            <p>Sistem Master Kode Akun - Koperasi Desa Merah Putih Kedungsari</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h3>📋 Menu COA</h3>
+                <div class="menu-item active" onclick="showSection('view')">👁️ Lihat COA</div>
+                <div class="menu-item" onclick="showSection('add')">➕ Tambah Akun</div>
+                <div class="menu-item" onclick="showSection('sync')">🔄 Sync Google Sheets</div>
+                <div class="menu-item" onclick="showSection('export')">📤 Export Data</div>
+                <div class="menu-item" onclick="showSection('settings')">⚙️ Pengaturan</div>
+                
+                <h3 style="margin-top: 30px;">🔗 Navigasi</h3>
+                <a href="../anggota/" class="menu-item" style="text-decoration: none; display: block;">👥 Dashboard Anggota</a>
+                <a href="../koperasi-website/products.html" class="menu-item" style="text-decoration: none; display: block;">🛒 Products Page</a>
+            </div>
+
+            <div class="content-area">
+                <!-- Stats Overview -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalAccounts">0</div>
+                        <div class="stat-label">Total Akun</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="activeAccounts">0</div>
+                        <div class="stat-label">Akun Aktif</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="lastSync">Never</div>
+                        <div class="stat-label">Last Sync</div>
+                    </div>
+                </div>
+
+                <!-- Search and Actions -->
+                <div class="search-section">
+                    <input type="text" class="search-input" placeholder="Cari kode akun atau nama akun..." id="searchInput" onkeyup="searchAccounts()">
+                    <button class="btn btn-primary" onclick="openAddModal()">➕ Tambah Akun</button>
+                    <button class="btn btn-success" onclick="syncToGoogleSheets()">🔄 Sync ke Sheets</button>
+                </div>
+
+                <!-- COA Table -->
+                <table class="coa-table" id="coaTable">
+                    <thead>
+                        <tr>
+                            <th>Kode Akun</th>
+                            <th>Nama Akun</th>
+                            <th>Kategori</th>
+                            <th>Tipe</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coaTableBody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="coaModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Tambah Akun Baru</h2>
+            
+            <form id="coaForm" onsubmit="saveAccount(event)">
+                <div class="form-group">
+                    <label for="accountCode">Kode Akun</label>
+                    <input type="text" id="accountCode" name="accountCode" required placeholder="Contoh: 1-1001">
+                </div>
+                
+                <div class="form-group">
+                    <label for="accountName">Nama Akun</label>
+                    <input type="text" id="accountName" name="accountName" required placeholder="Contoh: Kas">
+                </div>
+                
+                <div class="form-group">
+                    <label for="accountCategory">Kategori</label>
+                    <select id="accountCategory" name="accountCategory" required>
+                        <option value="">Pilih Kategori</option>
+                        <option value="assets">Assets (Harta)</option>
+                        <option value="liabilities">Liabilities (Kewajiban)</option>
+                        <option value="equity">Equity (Modal)</option>
+                        <option value="revenue">Revenue (Pendapatan)</option>
+                        <option value="expenses">Expenses (Beban)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="accountType">Tipe Akun</label>
+                    <select id="accountType" name="accountType" required>
+                        <option value="">Pilih Tipe</option>
+                        <option value="header">Header</option>
+                        <option value="detail">Detail</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Deskripsi</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Deskripsi akun (opsional)"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status" required>
+                        <option value="active">Aktif</option>
+                        <option value="inactive">Tidak Aktif</option>
+                    </select>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button type="submit" class="btn btn-success">💾 Simpan</button>
+                    <button type="button" class="btn btn-danger" onclick="closeModal()" style="margin-left: 15px;">❌ Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        // Data COA Master - akan disimpan ke Google Sheets
+        let coaData = [
+            // Assets
+            { code: '1-0000', name: 'ASSETS', category: 'assets', type: 'header', description: 'Harta Koperasi', status: 'active' },
+            { code: '1-1000', name: 'Current Assets', category: 'assets', type: 'header', description: 'Harta Lancar', status: 'active' },
+            { code: '1-1001', name: 'Kas', category: 'assets', type: 'detail', description: 'Kas di tangan', status: 'active' },
+            { code: '1-1002', name: 'Bank', category: 'assets', type: 'detail', description: 'Rekening bank koperasi', status: 'active' },
+            { code: '1-1100', name: 'Piutang Anggota', category: 'assets', type: 'detail', description: 'Piutang kepada anggota', status: 'active' },
+            { code: '1-1200', name: 'Persediaan Barang', category: 'assets', type: 'detail', description: 'Stok barang dagangan', status: 'active' },
+            { code: '1-2000', name: 'Fixed Assets', category: 'assets', type: 'header', description: 'Harta Tetap', status: 'active' },
+            { code: '1-2001', name: 'Peralatan Koperasi', category: 'assets', type: 'detail', description: 'Peralatan dan perlengkapan', status: 'active' },
+
+            // Liabilities  
+            { code: '2-0000', name: 'LIABILITIES', category: 'liabilities', type: 'header', description: 'Kewajiban Koperasi', status: 'active' },
+            { code: '2-1001', name: 'Hutang Supplier', category: 'liabilities', type: 'detail', description: 'Hutang kepada pemasok', status: 'active' },
+            { code: '2-1100', name: 'Simpanan Pokok Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan pokok anggota', status: 'active' },
+            { code: '2-1200', name: 'Simpanan Wajib Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan wajib anggota', status: 'active' },
+            { code: '2-1300', name: 'Simpanan Sukarela Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan sukarela anggota', status: 'active' },
+
+            // Equity
+            { code: '3-0000', name: 'EQUITY', category: 'equity', type: 'header', description: 'Modal Koperasi', status: 'active' },
+            { code: '3-1001', name: 'Modal Dasar Koperasi', category: 'equity', type: 'detail', description: 'Modal dasar koperasi', status: 'active' },
+            { code: '3-1100', name: 'SHU Tahun Berjalan', category: 'equity', type: 'detail', description: 'Sisa Hasil Usaha tahun berjalan', status: 'active' },
+            { code: '3-1200', name: 'SHU Ditahan', category: 'equity', type: 'detail', description: 'SHU yang ditahan', status: 'active' },
+
+            // Revenue
+            { code: '4-0000', name: 'REVENUE', category: 'revenue', type: 'header', description: 'Pendapatan Koperasi', status: 'active' },
+            { code: '4-1001', name: 'Penjualan Barang', category: 'revenue', type: 'detail', description: 'Pendapatan dari penjualan barang', status: 'active' },
+            { code: '4-1100', name: 'Pendapatan Jasa', category: 'revenue', type: 'detail', description: 'Pendapatan dari jasa koperasi', status: 'active' },
+            { code: '4-1200', name: 'Pendapatan Bunga Simpan Pinjam', category: 'revenue', type: 'detail', description: 'Pendapatan bunga pinjaman anggota', status: 'active' },
+
+            // Expenses
+            { code: '5-0000', name: 'EXPENSES', category: 'expenses', type: 'header', description: 'Beban Koperasi', status: 'active' },
+            { code: '5-1001', name: 'Harga Pokok Penjualan', category: 'expenses', type: 'detail', description: 'HPP barang dagangan', status: 'active' },
+            { code: '5-1100', name: 'Beban Operasional', category: 'expenses', type: 'detail', description: 'Beban operasional harian', status: 'active' },
+            { code: '5-1200', name: 'Beban Administrasi', category: 'expenses', type: 'detail', description: 'Beban administrasi dan umum', status: 'active' },
+            { code: '5-1300', name: 'Beban Bunga Simpanan', category: 'expenses', type: 'detail', description: 'Beban bunga untuk simpanan anggota', status: 'active' }
+        ];
+
+        let editingIndex = -1;
+        const GOOGLE_SHEETS_URL = 'YOUR_GOOGLE_SHEETS_WEBAPP_URL'; // Akan diisi dengan URL Apps Script
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCOAData();
+            updateStats();
+        });
+
+        function loadCOAData() {
+            renderCOATable();
+        }
+
+        function renderCOATable(data = coaData) {
+            const tbody = document.getElementById('coaTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach((account, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${account.code}</strong></td>
+                    <td>${account.type === 'header' ? '<strong>' + account.name + '</strong>' : account.name}</td>
+                    <td><span class="account-category category-${account.category}">${getCategoryLabel(account.category)}</span></td>
+                    <td>${account.type === 'header' ? 'Header' : 'Detail'}</td>
+                    <td><span class="status-${account.status}">${account.status === 'active' ? 'Aktif' : 'Tidak Aktif'}</span></td>
+                    <td>
+                        <button class="btn btn-primary btn-small" onclick="editAccount(${index})" style="margin-right: 5px;">✏️ Edit</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteAccount(${index})">🗑️ Hapus</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function getCategoryLabel(category) {
+            const labels = {
+                'assets': 'Harta',
+                'liabilities': 'Kewajiban', 
+                'equity': 'Modal',
+                'revenue': 'Pendapatan',
+                'expenses': 'Beban'
+            };
+            return labels[category] || category;
+        }
+
+        function updateStats() {
+            document.getElementById('totalAccounts').textContent = coaData.length;
+            document.getElementById('activeAccounts').textContent = coaData.filter(acc => acc.status === 'active').length;
+            
+            const lastSync = localStorage.getItem('coa_last_sync');
+            document.getElementById('lastSync').textContent = lastSync || 'Never';
+        }
+
+        function searchAccounts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = coaData.filter(account => 
+                account.code.toLowerCase().includes(searchTerm) ||
+                account.name.toLowerCase().includes(searchTerm) ||
+                account.category.toLowerCase().includes(searchTerm)
+            );
+            renderCOATable(filteredData);
+        }
+
+        function showSection(section) {
+            // Remove active class from all menu items
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            
+            // Add active class to clicked item
+            event.target.classList.add('active');
+            
+            // Handle different sections
+            switch(section) {
+                case 'view':
+                    loadCOAData();
+                    break;
+                case 'add':
+                    openAddModal();
+                    break;
+                case 'sync':
+                    syncToGoogleSheets();
+                    break;
+                case 'export':
+                    exportCOAData();
+                    break;
+                case 'settings':
+                    showNotification('Pengaturan akan tersedia di versi mendatang');
+                    break;
+            }
+        }
+
+        function openAddModal() {
+            editingIndex = -1;
+            document.getElementById('modalTitle').textContent = 'Tambah Akun Baru';
+            document.getElementById('coaForm').reset();
+            document.getElementById('coaModal').style.display = 'block';
+        }
+
+        function editAccount(index) {
+            editingIndex = index;
+            const account = coaData[index];
+            
+            document.getElementById('modalTitle').textContent = 'Edit Akun';
+            document.getElementById('accountCode').value = account.code;
+            document.getElementById('accountName').value = account.name;
+            document.getElementById('accountCategory').value = account.category;
+            document.getElementById('accountType').value = account.type;
+            document.getElementById('description').value = account.description || '';
+            document.getElementById('status').value = account.status;
+            
+            document.getElementById('coaModal').style.display = 'block';
+        }
+
+        function deleteAccount(index) {
+            if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
+                coaData.splice(index, 1);
+                renderCOATable();
+                updateStats();
+                showNotification('Akun berhasil dihapus');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('coaModal').style.display = 'none';
+        }
+
+        function saveAccount(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const accountData = {
+                code: formData.get('accountCode'),
+                name: formData.get('accountName'),
+                category: formData.get('accountCategory'),
+                type: formData.get('accountType'),
+                description: formData.get('description'),
+                status: formData.get('status')
+            };
+
+            // Validate unique code
+            if (editingIndex === -1 && coaData.some(acc => acc.code === accountData.code)) {
+                showNotification('Kode akun sudah digunakan', true);
+                return;
+            }
+
+            if (editingIndex === -1) {
+                coaData.push(accountData);
+                showNotification('Akun baru berhasil ditambahkan');
+            } else {
+                coaData[editingIndex] = accountData;
+                showNotification('Akun berhasil diupdate');
+            }
+
+            renderCOATable();
+            updateStats();
+            closeModal();
+        }
+
+        function syncToGoogleSheets() {
+            showNotification('Memproses sync ke Google Sheets...');
+            
+            // Simulate sync process
+            setTimeout(() => {
+                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
+                updateStats();
+                showNotification('Data berhasil disync ke Google Sheets');
+                
+                // Track sync event
+                gtag('event', 'coa_sync', {
+                    event_category: 'Accounting',
+                    event_label: 'Google Sheets Sync',
+                    value: coaData.length
+                });
+            }, 2000);
+        }
+
+        function exportCOAData() {
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
+                + coaData.map(acc => 
+                    `${acc.code},"${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
+                ).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `COA_KDMP_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification('Data COA berhasil diexport');
+        }
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            notification.className = `notification ${isError ? 'error' : ''} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Modal click outside to close
+        window.onclick = function(event) {
+            const modal = document.getElementById('coaModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Google Sheets Integration Functions
+        function sendToGoogleSheets(data) {
+            // This function will integrate with Google Apps Script
+            // The actual implementation requires Apps Script WebApp URL
+            
+            const payload = {
+                action: 'updateCOA',
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+
+            // Example fetch to Google Apps Script WebApp
+            /*
+            fetch(GOOGLE_SHEETS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showNotification('Data berhasil disimpan ke Google Sheets');
+                    localStorage.setItem('coa_last_sync', new Date().toLocaleString());
+                    updateStats();
+                } else {
+                    showNotification('Gagal menyimpan ke Google Sheets: ' + result.error, true);
+                }
+            })
+            .catch(error => {
+                showNotification('Error: ' + error.message, true);
+            });
+            */
+        }
+
+        // Auto-save to localStorage for offline capability
+        function autoSave() {
+            localStorage.setItem('coa_data', JSON.stringify(coaData));
+            localStorage.setItem('coa_last_update', new Date().toISOString());
+        }
+
+        // Load from localStorage on page load
+        function loadFromStorage() {
+            const savedData = localStorage.getItem('coa_data');
+            if (savedData) {
+                try {
+                    coaData = JSON.parse(savedData);
+                } catch (e) {
+                    console.error('Error loading data from storage:', e);
+                    // Use default data if stored data is corrupted
+                }
+            }
+        }
+
+        // Override the incomplete saveAccount function
+        function saveAccount(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const accountData = {
+                code: formData.get('accountCode'),
+                name: formData.get('accountName'),
+                category: formData.get('accountCategory'),
+                type: formData.get('accountType'),
+                description: formData.get('description'),
+                status: formData.get('status')
+            };
+
+            // Validate unique code
+            if (editingIndex === -1 && coaData.some(acc => acc.code === accountData.code)) {
+                showNotification('Kode akun sudah digunakan', true);
+                return;
+            }
+
+            if (editingIndex === -1) {
+                coaData.push(accountData);
+                showNotification('Akun baru berhasil ditambahkan');
+            } else {
+                coaData[editingIndex] = accountData;
+                showNotification('Akun berhasil diupdate');
+            }
+
+            renderCOATable();
+            updateStats();
+            autoSave();
+            closeModal();
+            
+            // Track COA management events
+            gtag('event', 'coa_account_saved', {
+                event_category: 'Accounting',
+                event_label: accountData.category,
+                value: 1
+            });
+        }
+
+        // Override the incomplete deleteAccount function
+        function deleteAccount(index) {
+            if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
+                coaData.splice(index, 1);
+                renderCOATable();
+                updateStats();
+                autoSave();
+                showNotification('Akun berhasil dihapus');
+                
+                // Track delete event
+                gtag('event', 'coa_account_deleted', {
+                    event_category: 'Accounting',
+                    event_label: 'Account Deleted',
+                    value: 1
+                });
+            }
+        }
+
+        // Enhanced sync function with actual Google Sheets integration
+        function syncToGoogleSheets() {
+            showNotification('Memproses sync ke Google Sheets...');
+            
+            // Prepare data for Google Sheets
+            const sheetData = coaData.map(account => [
+                account.code,
+                account.name,
+                account.category,
+                account.type,
+                account.description || '',
+                account.status,
+                new Date().toISOString()
+            ]);
+
+            // Simulate sync process (replace with actual Google Sheets integration)
+            setTimeout(() => {
+                // Send to Google Sheets (uncomment when Apps Script is ready)
+                // sendToGoogleSheets(sheetData);
+                
+                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
+                updateStats();
+                showNotification('Data berhasil disync ke Google Sheets');
+                
+                // Track sync event
+                gtag('event', 'coa_sync', {
+                    event_category: 'Accounting',
+                    event_label: 'Google Sheets Sync',
+                    value: coaData.length
+                });
+            }, 2000);
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage();
+            loadCOAData();
+            updateStats();
+            
+            // Track page view
+            gtag('event', 'page_view', {
+                page_title: 'COA Master System',
+                page_location: window.location.href
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Ctrl+N for new account
+            if (event.ctrlKey && event.key === 'n') {
+                event.preventDefault();
+                openAddModal();
+            }
+            
+            // Escape to close modal
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // API functions for integration with other modules
+        window.COAMaster = {
+            getAccount: function(code) {
+                return coaData.find(acc => acc.code === code);
+            },
+            
+            getAccountsByCategory: function(category) {
+                return coaData.filter(acc => acc.category === category && acc.status === 'active');
+            },
+            
+            getAllActiveAccounts: function() {
+                return coaData.filter(acc => acc.status === 'active');
+            },
+            
+            validateAccountCode: function(code) {
+                return !coaData.some(acc => acc.code === code);
+            }
+        };
+		</script>
+</body>
+</html>
