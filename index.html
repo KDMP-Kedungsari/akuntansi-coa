@@ -225,12 +225,14 @@
 
         .modal-content {
             background: white;
-            margin: 5% auto;
+            margin: 2% auto;
             padding: 30px;
             border-radius: 20px;
             width: 90%;
             max-width: 600px;
             position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .close {
@@ -320,38 +322,25 @@
         }
 
         .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
             border-radius: 50%;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
-            margin-right: 10px;
+            margin: 0 auto 10px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-
-        .connection-status {
-            padding: 10px 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .connection-online {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .connection-offline {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
         }
 
         @media (max-width: 768px) {
@@ -376,6 +365,12 @@
                 flex-direction: column;
                 align-items: stretch;
             }
+            
+            .modal-content {
+                margin: 10px;
+                width: calc(100% - 20px);
+                max-height: calc(100vh - 40px);
+            }
         }
     </style>
 </head>
@@ -393,7 +388,7 @@
                 <div class="menu-item" onclick="showSection('add')">➕ Tambah Akun</div>
                 <div class="menu-item" onclick="showSection('sync')">🔄 Sync Google Sheets</div>
                 <div class="menu-item" onclick="showSection('export')">📤 Export Data</div>
-                <div class="menu-item" onclick="showSection('test')">🔧 Test Koneksi</div>
+                <div class="menu-item" onclick="showSection('settings')">⚙️ Pengaturan</div>
                 
                 <h3 style="margin-top: 30px;">🔗 Navigasi</h3>
                 <a href="../anggota/" class="menu-item" style="text-decoration: none; display: block;">👥 Dashboard Anggota</a>
@@ -401,9 +396,10 @@
             </div>
 
             <div class="content-area">
-                <!-- Connection Status -->
-                <div id="connectionStatus" class="connection-status connection-offline">
-                    ⚠️ Status koneksi Google Sheets belum diperiksa - Klik "Test Koneksi"
+                <!-- Loading indicator -->
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <div>Loading data...</div>
                 </div>
 
                 <!-- Stats Overview -->
@@ -426,7 +422,7 @@
                 <div class="search-section">
                     <input type="text" class="search-input" placeholder="Cari kode akun atau nama akun..." id="searchInput" onkeyup="searchAccounts()">
                     <button class="btn btn-primary" onclick="openAddModal()">➕ Tambah Akun</button>
-                    <button class="btn btn-success" onclick="syncToGoogleSheets()" id="syncBtn">🔄 Sync ke Sheets</button>
+                    <button class="btn btn-success" onclick="syncToGoogleSheets()">🔄 Sync ke Sheets</button>
                 </div>
 
                 <!-- COA Table -->
@@ -514,65 +510,129 @@
     </div>
 
     <script>
-        // PERHATIAN: Ganti URL ini dengan URL Google Apps Script Anda
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzcCg-gwHwCnhyKDKYX6-eE4R8HtxzfEt4uLU1Ai19EjI2nVqZUPsIeAyIYYp2MdVs/exec';
-        
-        // Data COA Master - akan disimpan ke Google Sheets
-        let coaData = [
-            // Assets
-            { code: '1-0000', name: 'ASSETS', category: 'assets', type: 'header', description: 'Harta Koperasi', status: 'active' },
-            { code: '1-1000', name: 'Current Assets', category: 'assets', type: 'header', description: 'Harta Lancar', status: 'active' },
-            { code: '1-1001', name: 'Kas', category: 'assets', type: 'detail', description: 'Kas di tangan', status: 'active' },
-            { code: '1-1002', name: 'Bank', category: 'assets', type: 'detail', description: 'Rekening bank koperasi', status: 'active' },
-            { code: '1-1100', name: 'Piutang Anggota', category: 'assets', type: 'detail', description: 'Piutang kepada anggota', status: 'active' },
-            { code: '1-1200', name: 'Persediaan Barang', category: 'assets', type: 'detail', description: 'Stok barang dagangan', status: 'active' },
-            { code: '1-2000', name: 'Fixed Assets', category: 'assets', type: 'header', description: 'Harta Tetap', status: 'active' },
-            { code: '1-2001', name: 'Peralatan Koperasi', category: 'assets', type: 'detail', description: 'Peralatan dan perlengkapan', status: 'active' },
+        // Configuration
+        const CONFIG = {
+            APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyp42hgqkn293pzOfJA4rOOVOnNVf3GXtnyr7w3gUA3m_Uovlbxliw33V9AiIGHaXFJ/exec', // Replace with your deployed Apps Script URL
+            VERSION: '1.0.0',
+            DEBUG: true
+        };
 
-            // Liabilities  
-            { code: '2-0000', name: 'LIABILITIES', category: 'liabilities', type: 'header', description: 'Kewajiban Koperasi', status: 'active' },
-            { code: '2-1001', name: 'Hutang Supplier', category: 'liabilities', type: 'detail', description: 'Hutang kepada pemasok', status: 'active' },
-            { code: '2-1100', name: 'Simpanan Pokok Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan pokok anggota', status: 'active' },
-            { code: '2-1200', name: 'Simpanan Wajib Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan wajib anggota', status: 'active' },
-            { code: '2-1300', name: 'Simpanan Sukarela Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan sukarela anggota', status: 'active' },
-
-            // Equity
-            { code: '3-0000', name: 'EQUITY', category: 'equity', type: 'header', description: 'Modal Koperasi', status: 'active' },
-            { code: '3-1001', name: 'Modal Dasar Koperasi', category: 'equity', type: 'detail', description: 'Modal dasar koperasi', status: 'active' },
-            { code: '3-1100', name: 'SHU Tahun Berjalan', category: 'equity', type: 'detail', description: 'Sisa Hasil Usaha tahun berjalan', status: 'active' },
-            { code: '3-1200', name: 'SHU Ditahan', category: 'equity', type: 'detail', description: 'SHU yang ditahan', status: 'active' },
-
-            // Revenue
-            { code: '4-0000', name: 'REVENUE', category: 'revenue', type: 'header', description: 'Pendapatan Koperasi', status: 'active' },
-            { code: '4-1001', name: 'Penjualan Barang', category: 'revenue', type: 'detail', description: 'Pendapatan dari penjualan barang', status: 'active' },
-            { code: '4-1100', name: 'Pendapatan Jasa', category: 'revenue', type: 'detail', description: 'Pendapatan dari jasa koperasi', status: 'active' },
-            { code: '4-1200', name: 'Pendapatan Bunga Simpan Pinjam', category: 'revenue', type: 'detail', description: 'Pendapatan bunga pinjaman anggota', status: 'active' },
-
-            // Expenses
-            { code: '5-0000', name: 'EXPENSES', category: 'expenses', type: 'header', description: 'Beban Koperasi', status: 'active' },
-            { code: '5-1001', name: 'Harga Pokok Penjualan', category: 'expenses', type: 'detail', description: 'HPP barang dagangan', status: 'active' },
-            { code: '5-1100', name: 'Beban Operasional', category: 'expenses', type: 'detail', description: 'Beban operasional harian', status: 'active' },
-            { code: '5-1200', name: 'Beban Administrasi', category: 'expenses', type: 'detail', description: 'Beban administrasi dan umum', status: 'active' },
-            { code: '5-1300', name: 'Beban Bunga Simpanan', category: 'expenses', type: 'detail', description: 'Beban bunga untuk simpanan anggota', status: 'active' }
-        ];
-
+        // Global variables
+        let coaData = [];
         let editingIndex = -1;
 
-        // Initialize
+        // Initialize application
         document.addEventListener('DOMContentLoaded', function() {
-            loadFromStorage();
-            loadCOAData();
-            updateStats();
-            
-            // Track page view
-            gtag('event', 'page_view', {
-                page_title: 'COA Master System',
-                page_location: window.location.href
-            });
+            initializeApp();
         });
 
-        function loadCOAData() {
-            renderCOATable();
+        async function initializeApp() {
+            showLoading(true);
+            try {
+                await loadCOAData();
+                updateStats();
+                trackPageView();
+            } catch (error) {
+                console.error('Initialization error:', error);
+                showNotification('Error loading data: ' + error.message, true);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function showLoading(show) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const statsGrid = document.getElementById('statsGrid');
+            const coaTable = document.getElementById('coaTable');
+            
+            if (show) {
+                loadingIndicator.style.display = 'block';
+                statsGrid.style.display = 'none';
+                coaTable.style.display = 'none';
+            } else {
+                loadingIndicator.style.display = 'none';
+                statsGrid.style.display = 'grid';
+                coaTable.style.display = 'table';
+            }
+        }
+
+        async function loadCOAData() {
+            try {
+                if (CONFIG.APPS_SCRIPT_URL === 'REPLACE_WITH_YOUR_APPS_SCRIPT_URL') {
+                    // Use default data if Apps Script URL is not configured
+                    coaData = getDefaultCOAData();
+                    renderCOATable();
+                    return;
+                }
+
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=getCOA', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    coaData = result.data || getDefaultCOAData();
+                    renderCOATable();
+                    
+                    // Update last sync time
+                    const lastSync = result.lastSync;
+                    if (lastSync) {
+                        document.getElementById('lastSync').textContent = formatDate(lastSync);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to load COA data');
+                }
+            } catch (error) {
+                console.error('Error loading COA data:', error);
+                // Fallback to default data
+                coaData = getDefaultCOAData();
+                renderCOATable();
+                showNotification('Using offline data. Please check connection.', true);
+            }
+        }
+
+        function getDefaultCOAData() {
+            return [
+                // Assets
+                { code: '1-0000', name: 'ASSETS', category: 'assets', type: 'header', description: 'Harta Koperasi', status: 'active' },
+                { code: '1-1000', name: 'Current Assets', category: 'assets', type: 'header', description: 'Harta Lancar', status: 'active' },
+                { code: '1-1001', name: 'Kas', category: 'assets', type: 'detail', description: 'Kas di tangan', status: 'active' },
+                { code: '1-1002', name: 'Bank', category: 'assets', type: 'detail', description: 'Rekening bank koperasi', status: 'active' },
+                { code: '1-1100', name: 'Piutang Anggota', category: 'assets', type: 'detail', description: 'Piutang kepada anggota', status: 'active' },
+                { code: '1-1200', name: 'Persediaan Barang', category: 'assets', type: 'detail', description: 'Stok barang dagangan', status: 'active' },
+                { code: '1-2000', name: 'Fixed Assets', category: 'assets', type: 'header', description: 'Harta Tetap', status: 'active' },
+                { code: '1-2001', name: 'Peralatan Koperasi', category: 'assets', type: 'detail', description: 'Peralatan dan perlengkapan', status: 'active' },
+
+                // Liabilities
+                { code: '2-0000', name: 'LIABILITIES', category: 'liabilities', type: 'header', description: 'Kewajiban Koperasi', status: 'active' },
+                { code: '2-1001', name: 'Hutang Supplier', category: 'liabilities', type: 'detail', description: 'Hutang kepada pemasok', status: 'active' },
+                { code: '2-1100', name: 'Simpanan Pokok Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan pokok anggota', status: 'active' },
+                { code: '2-1200', name: 'Simpanan Wajib Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan wajib anggota', status: 'active' },
+                { code: '2-1300', name: 'Simpanan Sukarela Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan sukarela anggota', status: 'active' },
+
+                // Equity
+                { code: '3-0000', name: 'EQUITY', category: 'equity', type: 'header', description: 'Modal Koperasi', status: 'active' },
+                { code: '3-1001', name: 'Modal Dasar Koperasi', category: 'equity', type: 'detail', description: 'Modal dasar koperasi', status: 'active' },
+                { code: '3-1100', name: 'SHU Tahun Berjalan', category: 'equity', type: 'detail', description: 'Sisa Hasil Usaha tahun berjalan', status: 'active' },
+                { code: '3-1200', name: 'SHU Ditahan', category: 'equity', type: 'detail', description: 'SHU yang ditahan', status: 'active' },
+
+                // Revenue
+                { code: '4-0000', name: 'REVENUE', category: 'revenue', type: 'header', description: 'Pendapatan Koperasi', status: 'active' },
+                { code: '4-1001', name: 'Penjualan Barang', category: 'revenue', type: 'detail', description: 'Pendapatan dari penjualan barang', status: 'active' },
+                { code: '4-1100', name: 'Pendapatan Jasa', category: 'revenue', type: 'detail', description: 'Pendapatan dari jasa koperasi', status: 'active' },
+                { code: '4-1200', name: 'Pendapatan Bunga Simpan Pinjam', category: 'revenue', type: 'detail', description: 'Pendapatan bunga pinjaman anggota', status: 'active' },
+
+                // Expenses
+                { code: '5-0000', name: 'EXPENSES', category: 'expenses', type: 'header', description: 'Beban Koperasi', status: 'active' },
+                { code: '5-1001', name: 'Harga Pokok Penjualan', category: 'expenses', type: 'detail', description: 'HPP barang dagangan', status: 'active' },
+                { code: '5-1100', name: 'Beban Operasional', category: 'expenses', type: 'detail', description: 'Beban operasional harian', status: 'active' },
+                { code: '5-1200', name: 'Beban Administrasi', category: 'expenses', type: 'detail', description: 'Beban administrasi dan umum', status: 'active' },
+                { code: '5-1300', name: 'Beban Bunga Simpanan', category: 'expenses', type: 'detail', description: 'Beban bunga untuk simpanan anggota', status: 'active' }
+            ];
         }
 
         function renderCOATable(data = coaData) {
@@ -599,7 +659,7 @@
         function getCategoryLabel(category) {
             const labels = {
                 'assets': 'Harta',
-                'liabilities': 'Kewajiban', 
+                'liabilities': 'Kewajiban',
                 'equity': 'Modal',
                 'revenue': 'Pendapatan',
                 'expenses': 'Beban'
@@ -610,14 +670,11 @@
         function updateStats() {
             document.getElementById('totalAccounts').textContent = coaData.length;
             document.getElementById('activeAccounts').textContent = coaData.filter(acc => acc.status === 'active').length;
-            
-            const lastSync = localStorage.getItem('coa_last_sync');
-            document.getElementById('lastSync').textContent = lastSync || 'Never';
         }
 
         function searchAccounts() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const filteredData = coaData.filter(account => 
+            const filteredData = coaData.filter(account =>
                 account.code.toLowerCase().includes(searchTerm) ||
                 account.name.toLowerCase().includes(searchTerm) ||
                 account.category.toLowerCase().includes(searchTerm)
@@ -633,7 +690,7 @@
             event.target.classList.add('active');
             
             // Handle different sections
-            switch(section) {
+            switch (section) {
                 case 'view':
                     loadCOAData();
                     break;
@@ -646,8 +703,8 @@
                 case 'export':
                     exportCOAData();
                     break;
-                case 'test':
-                    testGoogleSheetsConnection();
+                case 'settings':
+                    showNotification('Pengaturan akan tersedia di versi mendatang');
                     break;
             }
         }
@@ -676,17 +733,19 @@
 
         function deleteAccount(index) {
             if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
+                const deletedAccount = coaData[index];
                 coaData.splice(index, 1);
                 renderCOATable();
                 updateStats();
-                autoSave();
                 showNotification('Akun berhasil dihapus');
                 
+                // Auto sync after delete
+                syncToGoogleSheets();
+                
                 // Track delete event
-                gtag('event', 'coa_account_deleted', {
-                    event_category: 'Accounting',
-                    event_label: 'Account Deleted',
-                    value: 1
+                trackEvent('coa_account_deleted', {
+                    category: deletedAccount.category,
+                    account_code: deletedAccount.code
                 });
             }
         }
@@ -695,7 +754,7 @@
             document.getElementById('coaModal').style.display = 'none';
         }
 
-        function saveAccount(event) {
+        async function saveAccount(event) {
             event.preventDefault();
             
             const formData = new FormData(event.target);
@@ -705,11 +764,14 @@
                 category: formData.get('accountCategory'),
                 type: formData.get('accountType'),
                 description: formData.get('description'),
-                status: formData.get('status')
+                status: formData.get('status'),
+                createdDate: editingIndex === -1 ? new Date().toISOString() : (coaData[editingIndex].createdDate || new Date().toISOString()),
+                modifiedDate: new Date().toISOString()
             };
 
             // Validate unique code
-            if (editingIndex === -1 && coaData.some(acc => acc.code === accountData.code)) {
+            const existingAccount = coaData.find((acc, idx) => acc.code === accountData.code && idx !== editingIndex);
+            if (existingAccount) {
                 showNotification('Kode akun sudah digunakan', true);
                 return;
             }
@@ -717,145 +779,94 @@
             if (editingIndex === -1) {
                 coaData.push(accountData);
                 showNotification('Akun baru berhasil ditambahkan');
+                trackEvent('coa_account_added', { category: accountData.category });
             } else {
                 coaData[editingIndex] = accountData;
                 showNotification('Akun berhasil diupdate');
+                trackEvent('coa_account_updated', { category: accountData.category });
             }
 
             renderCOATable();
             updateStats();
-            autoSave();
             closeModal();
             
-            // Track COA management events
-            gtag('event', 'coa_account_saved', {
-                event_category: 'Accounting',
-                event_label: accountData.category,
-                value: 1
-            });
+            // Auto sync after save
+            await syncToGoogleSheets();
         }
 
-        function testGoogleSheetsConnection() {
-            showNotification('Testing koneksi ke Google Sheets...');
-            
-            if (GOOGLE_SHEETS_URL.includes('YOUR_SCRIPT_ID')) {
-                showNotification('❌ URL Google Apps Script belum dikonfigurasi!', true);
-                updateConnectionStatus(false, 'URL belum dikonfigurasi');
-                return;
-            }
-
-            fetch(GOOGLE_SHEETS_URL + '?test=1', {
-                method: 'GET',
-                mode: 'cors'
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        async function syncToGoogleSheets() {
+            try {
+                showNotification('Memproses sync ke Google Sheets...');
+                
+                if (CONFIG.APPS_SCRIPT_URL === 'REPLACE_WITH_YOUR_APPS_SCRIPT_URL') {
+                    // Simulate sync for demo
+                    setTimeout(() => {
+                        const now = new Date();
+                        document.getElementById('lastSync').textContent = formatDate(now);
+                        showNotification('Demo: Data akan disync saat Apps Script URL dikonfigurasi');
+                    }, 1500);
+                    return;
                 }
-                return response.json();
-            })
-            .then(result => {
+
+                const payload = {
+                    action: 'syncCOA',
+                    data: coaData,
+                    timestamp: new Date().toISOString()
+                };
+
+                const response = await fetch(CONFIG.APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
                 if (result.success) {
-                    showNotification('✅ Koneksi Google Sheets berhasil!');
-                    updateConnectionStatus(true, 'Koneksi aktif');
-                } else {
-                    showNotification('❌ Test gagal: ' + result.error, true);
-                    updateConnectionStatus(false, result.error);
-                }
-            })
-            .catch(error => {
-                console.error('Connection test error:', error);
-                showNotification('❌ Gagal terhubung: ' + error.message, true);
-                updateConnectionStatus(false, error.message);
-            });
-        }
-
-        function updateConnectionStatus(isOnline, message) {
-            const statusDiv = document.getElementById('connectionStatus');
-            if (isOnline) {
-                statusDiv.className = 'connection-status connection-online';
-                statusDiv.innerHTML = '✅ Google Sheets: ' + message;
-            } else {
-                statusDiv.className = 'connection-status connection-offline';
-                statusDiv.innerHTML = '❌ Google Sheets: ' + message;
-            }
-        }
-
-        function syncToGoogleSheets() {
-            if (GOOGLE_SHEETS_URL.includes('YOUR_SCRIPT_ID')) {
-                showNotification('❌ Silakan konfigurasi URL Google Apps Script terlebih dahulu!', true);
-                return;
-            }
-
-            const syncBtn = document.getElementById('syncBtn');
-            syncBtn.innerHTML = '<span class="loading"></span>Syncing...';
-            syncBtn.disabled = true;
-            
-            showNotification('Memproses sync ke Google Sheets...');
-            
-            const payload = {
-                action: 'updateCOA',
-                data: coaData
-            };
-
-            fetch(GOOGLE_SHEETS_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(result => {
-                if (result.success) {
-                    showNotification(`✅ ${result.message} (${result.recordCount} records)`);
-                    localStorage.setItem('coa_last_sync', new Date().toLocaleString('id-ID'));
-                    updateStats();
-                    updateConnectionStatus(true, 'Sync berhasil');
+                    const syncTime = new Date();
+                    document.getElementById('lastSync').textContent = formatDate(syncTime);
+                    showNotification('Data berhasil disync ke Google Sheets');
                     
-                    // Track sync event
-                    gtag('event', 'coa_sync', {
-                        event_category: 'Accounting',
-                        event_label: 'Google Sheets Sync',
-                        value: coaData.length
+                    trackEvent('coa_sync_success', { 
+                        total_accounts: coaData.length,
+                        sync_timestamp: syncTime.toISOString()
                     });
                 } else {
-                    showNotification('❌ Gagal sync: ' + result.error, true);
-                    updateConnectionStatus(false, result.error);
+                    throw new Error(result.error || 'Sync failed');
                 }
-            })
-            .catch(error => {
+                
+            } catch (error) {
                 console.error('Sync error:', error);
-                showNotification('❌ Error sync: ' + error.message, true);
-                updateConnectionStatus(false, error.message);
-            })
-            .finally(() => {
-                syncBtn.innerHTML = '🔄 Sync ke Sheets';
-                syncBtn.disabled = false;
-            });
+                showNotification('Gagal sync ke Google Sheets: ' + error.message, true);
+                trackEvent('coa_sync_error', { error: error.message });
+            }
         }
 
         function exportCOAData() {
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
-                + coaData.map(acc => 
-                    `${acc.code},"${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
-                ).join("\n");
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `COA_KDMP_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const csvHeader = "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status,Tanggal Dibuat,Terakhir Dimodifikasi\n";
+            const csvContent = coaData.map(acc => 
+                `"${acc.code}","${acc.name}","${getCategoryLabel(acc.category)}","${acc.type === 'header' ? 'Header' : 'Detail'}","${acc.description || ''}","${acc.status === 'active' ? 'Aktif' : 'Tidak Aktif'}","${formatDate(acc.createdDate)}","${formatDate(acc.modifiedDate)}"`
+            ).join('\n');
+            
+            const fullCsv = csvHeader + csvContent;
+            const blob = new Blob([fullCsv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `COA_KDMP_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
             
             showNotification('Data COA berhasil diexport');
+            trackEvent('coa_export', { total_accounts: coaData.length });
         }
 
         function showNotification(message, isError = false) {
@@ -870,22 +881,39 @@
             }, 4000);
         }
 
-        // Auto-save to localStorage for offline capability
-        function autoSave() {
-            localStorage.setItem('coa_data', JSON.stringify(coaData));
-            localStorage.setItem('coa_last_update', new Date().toISOString());
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString('id-ID', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         }
 
-        // Load from localStorage on page load
-        function loadFromStorage() {
-            const savedData = localStorage.getItem('coa_data');
-            if (savedData) {
-                try {
-                    coaData = JSON.parse(savedData);
-                } catch (e) {
-                    console.error('Error loading data from storage:', e);
-                    // Use default data if stored data is corrupted
-                }
+        // Analytics and tracking
+        function trackPageView() {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'page_view', {
+                    page_title: 'COA Master System',
+                    page_location: window.location.href,
+                    app_version: CONFIG.VERSION
+                });
+            }
+        }
+
+        function trackEvent(eventName, parameters = {}) {
+            if (typeof gtag !== 'undefined') {
+                gtag('event', eventName, {
+                    event_category: 'COA_Master',
+                    ...parameters
+                });
+            }
+            
+            if (CONFIG.DEBUG) {
+                console.log('Event tracked:', eventName, parameters);
             }
         }
 
@@ -909,10 +937,18 @@
             if (event.key === 'Escape') {
                 closeModal();
             }
+            
+            // Ctrl+S for sync
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                syncToGoogleSheets();
+            }
         });
 
         // API functions for integration with other modules
         window.COAMaster = {
+            version: CONFIG.VERSION,
+            
             getAccount: function(code) {
                 return coaData.find(acc => acc.code === code);
             },
@@ -925,83 +961,142 @@
                 return coaData.filter(acc => acc.status === 'active');
             },
             
+            getAllAccounts: function() {
+                return [...coaData]; // Return copy to prevent external modification
+            },
+            
             validateAccountCode: function(code) {
                 return !coaData.some(acc => acc.code === code);
-            }
-        };
-		// Tambahkan ini di file HTML untuk debug lebih detail
-function debugGoogleSheetsConnection() {
-    console.log('=== DEBUG GOOGLE SHEETS CONNECTION ===');
-    console.log('URL:', GOOGLE_SHEETS_URL);
-    
-    // Cek apakah URL sudah dikonfigurasi
-    if (GOOGLE_SHEETS_URL.includes('YOUR_SCRIPT_ID')) {
-        console.error('❌ URL belum dikonfigurasi!');
-        showNotification('❌ URL Google Apps Script belum dikonfigurasi!', true);
-        return;
-    }
-
-    console.log('🔍 Testing connection...');
-    
-    // Test dengan berbagai method
-    const testPayloads = [
-        // Test GET request
-        {
-            method: 'GET',
-            url: GOOGLE_SHEETS_URL + '?test=1'
-        },
-        // Test POST request  
-        {
-            method: 'POST',
-            url: GOOGLE_SHEETS_URL,
-            body: JSON.stringify({action: 'test'})
-        }
-    ];
-
-    testPayloads.forEach((test, index) => {
-        console.log(`📡 Test ${index + 1}: ${test.method} request`);
-        
-        const options = {
-            method: test.method,
-            mode: 'cors',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        };
-        
-        if (test.body) {
-            options.body = test.body;
-        }
-
-        fetch(test.url, options)
-            .then(response => {
-                console.log(`✅ Response ${index + 1}:`, response.status, response.statusText);
-                console.log('Headers:', [...response.headers.entries()]);
-                return response.text();
-            })
-            .then(text => {
-                console.log(`📄 Response body ${index + 1}:`, text);
-                try {
-                    const json = JSON.parse(text);
-                    console.log(`📊 Parsed JSON ${index + 1}:`, json);
-                } catch (e) {
-                    console.log(`⚠️ Not JSON response ${index + 1}`);
+            },
+            
+            addAccount: function(accountData) {
+                if (!this.validateAccountCode(accountData.code)) {
+                    throw new Error('Account code already exists');
                 }
-            })
-            .catch(error => {
-                console.error(`❌ Error ${index + 1}:`, error);
-                console.error('Error details:', {
-                    name: error.name,
-                    message: error.message,
-                    stack: error.stack
-                });
-            });
-    });
-}
+                
+                const newAccount = {
+                    ...accountData,
+                    createdDate: new Date().toISOString(),
+                    modifiedDate: new Date().toISOString()
+                };
+                
+                coaData.push(newAccount);
+                renderCOATable();
+                updateStats();
+                syncToGoogleSheets();
+                
+                return newAccount;
+            },
+            
+            updateAccount: function(code, accountData) {
+                const index = coaData.findIndex(acc => acc.code === code);
+                if (index === -1) {
+                    throw new Error('Account not found');
+                }
+                
+                coaData[index] = {
+                    ...coaData[index],
+                    ...accountData,
+                    modifiedDate: new Date().toISOString()
+                };
+                
+                renderCOATable();
+                updateStats();
+                syncToGoogleSheets();
+                
+                return coaData[index];
+            },
+            
+            deleteAccount: function(code) {
+                const index = coaData.findIndex(acc => acc.code === code);
+                if (index === -1) {
+                    throw new Error('Account not found');
+                }
+                
+                const deletedAccount = coaData.splice(index, 1)[0];
+                renderCOATable();
+                updateStats();
+                syncToGoogleSheets();
+                
+                return deletedAccount;
+            },
+            
+            refreshData: function() {
+                return loadCOAData();
+            },
+            
+            exportData: function() {
+                exportCOAData();
+            }
+        };
 
-// Panggil function debug
-// debugGoogleSheetsConnection();
-		
-		</script>
+        // Service Worker for offline capability (future enhancement)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                // Service worker registration can be added here for offline functionality
+            });
+        }
+
+        // Auto-save interval (every 5 minutes)
+        setInterval(async function() {
+            if (coaData.length > 0) {
+                try {
+                    await syncToGoogleSheets();
+                } catch (error) {
+                    console.error('Auto-sync failed:', error);
+                }
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+
+        // Backup to localStorage as fallback
+        function backupToLocalStorage() {
+            try {
+                localStorage.setItem('coa_backup', JSON.stringify({
+                    data: coaData,
+                    timestamp: new Date().toISOString(),
+                    version: CONFIG.VERSION
+                }));
+            } catch (error) {
+                console.error('Failed to backup to localStorage:', error);
+            }
+        }
+
+        // Load backup from localStorage if needed
+        function loadBackupFromLocalStorage() {
+            try {
+                const backup = localStorage.getItem('coa_backup');
+                if (backup) {
+                    const parsed = JSON.parse(backup);
+                    if (parsed.data && Array.isArray(parsed.data)) {
+                        return parsed.data;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load backup from localStorage:', error);
+            }
+            return null;
+        }
+
+        // Enhanced error handling
+        window.addEventListener('error', function(event) {
+            console.error('Global error:', event.error);
+            trackEvent('javascript_error', {
+                error_message: event.error?.message,
+                error_stack: event.error?.stack,
+                error_filename: event.filename,
+                error_lineno: event.lineno
+            });
+        });
+
+        // Network status monitoring
+        window.addEventListener('online', function() {
+            showNotification('Koneksi internet tersedia. Mencoba sync...');
+            syncToGoogleSheets();
+        });
+
+        window.addEventListener('offline', function() {
+            showNotification('Mode offline. Data akan disync saat koneksi tersedia.', true);
+        });
+    </script>
 </body>
 </html>
