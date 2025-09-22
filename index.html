@@ -929,6 +929,79 @@
                 return !coaData.some(acc => acc.code === code);
             }
         };
+		// Tambahkan ini di file HTML untuk debug lebih detail
+function debugGoogleSheetsConnection() {
+    console.log('=== DEBUG GOOGLE SHEETS CONNECTION ===');
+    console.log('URL:', GOOGLE_SHEETS_URL);
+    
+    // Cek apakah URL sudah dikonfigurasi
+    if (GOOGLE_SHEETS_URL.includes('YOUR_SCRIPT_ID')) {
+        console.error('❌ URL belum dikonfigurasi!');
+        showNotification('❌ URL Google Apps Script belum dikonfigurasi!', true);
+        return;
+    }
+
+    console.log('🔍 Testing connection...');
+    
+    // Test dengan berbagai method
+    const testPayloads = [
+        // Test GET request
+        {
+            method: 'GET',
+            url: GOOGLE_SHEETS_URL + '?test=1'
+        },
+        // Test POST request  
+        {
+            method: 'POST',
+            url: GOOGLE_SHEETS_URL,
+            body: JSON.stringify({action: 'test'})
+        }
+    ];
+
+    testPayloads.forEach((test, index) => {
+        console.log(`📡 Test ${index + 1}: ${test.method} request`);
+        
+        const options = {
+            method: test.method,
+            mode: 'cors',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
+        
+        if (test.body) {
+            options.body = test.body;
+        }
+
+        fetch(test.url, options)
+            .then(response => {
+                console.log(`✅ Response ${index + 1}:`, response.status, response.statusText);
+                console.log('Headers:', [...response.headers.entries()]);
+                return response.text();
+            })
+            .then(text => {
+                console.log(`📄 Response body ${index + 1}:`, text);
+                try {
+                    const json = JSON.parse(text);
+                    console.log(`📊 Parsed JSON ${index + 1}:`, json);
+                } catch (e) {
+                    console.log(`⚠️ Not JSON response ${index + 1}`);
+                }
+            })
+            .catch(error => {
+                console.error(`❌ Error ${index + 1}:`, error);
+                console.error('Error details:', {
+                    name: error.name,
+                    message: error.message,
+                    stack: error.stack
+                });
+            });
+    });
+}
+
+// Panggil function debug
+// debugGoogleSheetsConnection();
+		
 		</script>
 </body>
 </html>
