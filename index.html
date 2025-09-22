@@ -508,7 +508,7 @@
 
         let editingIndex = -1;
         // PENTING: GANTI URL INI DENGAN URL TERBARU DARI DEPLOYMENT APPS SCRIPT ANDA
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwlwSXVknI-0Hxo3B_C1gET41bRLvaOMwvfi0uigMEW_RUfId8jGF3P49IIfmHvgw/exec'; 
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzhBQ7-xLtttsgfJO-0F62IpCECuGI2hHuoz0nNOowh5BefCoOykgy4qmW-NE3IZ-A/exec'; 
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -726,20 +726,21 @@
         }
 
         // Google Sheets Integration Functions
-        function sendToGoogleSheets(data) {
-            const payload = {
-                action: 'updateCOA',
-                data: data,
-                timestamp: new Date().toISOString()
-            };
+       function sendToGoogleSheets(data) {
+        const payload = {
+            action: 'updateCOA',
+            data: data,
+            timestamp: new Date().toISOString()
+        };
 
-            fetch(GOOGLE_SHEETS_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            })
+        fetch(GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            // PENTING: Kembalikan Content-Type ke 'application/json'
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        })
             .then(response => {
                 // Pastikan respons dalam format JSON, meskipun statusnya error
                 if (!response.ok) {
