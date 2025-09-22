@@ -689,11 +689,11 @@
         }
 
         function exportCOAData() {
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
-                + coaData.map(acc => 
-                    `${acc.code},"${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
-                ).join("\n");
+		    const csvContent = "data:text/csv;charset=utf-8," 
+		        + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
+		        + coaData.map(acc => 
+		            `"${acc.code}","${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
+		        ).join("\n");
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
