@@ -514,7 +514,7 @@
         ];
 
         let editingIndex = -1;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxXn3nG9ck1ZM4_ksL_Al8Pcsr_4b4DJ_cHurSq3EY0xfxQwLHjDT6iUa-NHLPx6Dw/exec'; // Akan diisi dengan URL Apps Script
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxXn3nG9ck1ZM4_ksL_Al8Pcsr_4b4DJ_cHurSq3EY0xfxQwLHjDT6iUa-NHLPx6Dw/exec'; // Ganti dengan URL Apps Script Anda
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -729,16 +729,12 @@
         // Google Sheets Integration Functions
         function sendToGoogleSheets(data) {
             // This function will integrate with Google Apps Script
-            // The actual implementation requires Apps Script WebApp URL
-            
             const payload = {
                 action: 'updateCOA',
                 data: data,
                 timestamp: new Date().toISOString()
             };
 
-            // Example fetch to Google Apps Script WebApp
-            
             fetch(GOOGLE_SHEETS_URL, {
                 method: 'POST',
                 headers: {
@@ -752,12 +748,34 @@
                     showNotification('Data berhasil disimpan ke Google Sheets');
                     localStorage.setItem('coa_last_sync', new Date().toLocaleString());
                     updateStats();
+                    
+                    // Track successful sync
+                    gtag('event', 'coa_sync_success', {
+                        event_category: 'Accounting',
+                        event_label: 'Google Sheets Sync Success',
+                        value: data.length
+                    });
                 } else {
-                    showNotification('Gagal menyimpan ke Google Sheets: ' + result.error, true);
+                    showNotification('Gagal menyimpan ke Google Sheets: ' + (result.error || 'Unknown error'), true);
+                    
+                    // Track sync error
+                    gtag('event', 'coa_sync_error', {
+                        event_category: 'Accounting',
+                        event_label: 'Google Sheets Sync Error',
+                        value: 1
+                    });
                 }
             })
             .catch(error => {
-                showNotification('Error: ' + error.message, true);
+                showNotification('Error koneksi: ' + error.message, true);
+                console.error('Sync error:', error);
+                
+                // Track network error
+                gtag('event', 'coa_sync_network_error', {
+                    event_category: 'Accounting',
+                    event_label: 'Network Error',
+                    value: 1
+                });
             });
         }
 
@@ -843,33 +861,8 @@
         function syncToGoogleSheets() {
             showNotification('Memproses sync ke Google Sheets...');
             
-            // Prepare data for Google Sheets
-            const sheetData = coaData.map(account => [
-                account.code,
-                account.name,
-                account.category,
-                account.type,
-                account.description || '',
-                account.status,
-                new Date().toISOString()
-            ]);
-
-            // Simulate sync process (replace with actual Google Sheets integration)
-            setTimeout(() => {
-                // Send to Google Sheets (uncomment when Apps Script is ready)
-                // sendToGoogleSheets(sheetData);
-                
-                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-                updateStats();
-                showNotification('Data berhasil disync ke Google Sheets');
-                
-                // Track sync event
-                gtag('event', 'coa_sync', {
-                    event_category: 'Accounting',
-                    event_label: 'Google Sheets Sync',
-                    value: coaData.length
-                });
-            }, 2000);
+            // Send actual data to Google Sheets
+            sendToGoogleSheets(coaData);
         }
 
         // Initialize application
