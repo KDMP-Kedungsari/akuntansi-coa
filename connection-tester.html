@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COA Connection Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .input-group input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #e74c3c);
+            color: white;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-connected {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-disconnected {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-testing {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+
+        .step {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .step h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 COA Connection Tester</h1>
+            <p>Test koneksi antara Frontend dan Apps Script Backend</p>
+        </div>
+
+        <!-- URL Configuration -->
+        <div class="test-section">
+            <h3>1. Konfigurasi Apps Script URL</h3>
+            <div class="input-group">
+                <label for="appsScriptUrl">Apps Script Web App URL:</label>
+                <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+            </div>
+            <button class="btn btn-primary" onclick="saveConfig()">💾 Simpan Konfigurasi</button>
+            <div id="configResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Connection Tests -->
+        <div class="test-section">
+            <h3>2. Test Koneksi Dasar <span id="connectionStatus" class="status-indicator status-disconnected">DISCONNECTED</span></h3>
+            <div class="test-grid">
+                <button class="btn btn-primary" onclick="testBasicConnection()">🔄 Test Connection</button>
+                <button class="btn btn-success" onclick="testGetCOA()">📊 Test Get COA</button>
+                <button class="btn btn-success" onclick="testGetStats()">📈 Test Get Stats</button>
+                <button class="btn btn-danger" onclick="testAddAccount()">➕ Test Add Account</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Testing connection...</div>
+            </div>
+            
+            <div id="testResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Advanced Tests -->
+        <div class="test-section">
+            <h3>3. Test CRUD Operations</h3>
+            <div class="test-grid">
+                <button class="btn btn-primary" onclick="runAllTests()">🧪 Run All Tests</button>
+                <button class="btn btn-success" onclick="testSyncOperation()">🔄 Test Sync</button>
+                <button class="btn btn-danger" onclick="testErrorHandling()">❌ Test Error Handling</button>
+                <button class="btn btn-primary" onclick="clearResults()">🗑️ Clear Results</button>
+            </div>
+            <div id="advancedResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Troubleshooting Guide -->
+        <div class="test-section">
+            <h3>4. Troubleshooting Guide</h3>
+            
+            <div class="step">
+                <h4>Step 1: Cek Apps Script URL</h4>
+                <p>Pastikan URL Apps Script sudah benar dan Web App sudah deployed:</p>
+                <div class="code-block">https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec</div>
+            </div>
+
+            <div class="step">
+                <h4>Step 2: Cek Deployment Settings</h4>
+                <p>Di Apps Script, pastikan deployment settings:</p>
+                <ul style="margin: 10px 0 0 20px;">
+                    <li>Execute as: <strong>Me</strong></li>
+                    <li>Who has access: <strong>Anyone</strong></li>
+                    <li>Status: <strong>Active</strong></li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>Step 3: Cek Google Sheet</h4>
+                <p>Pastikan Google Sheet:</p>
+                <ul style="margin: 10px 0 0 20px;">
+                    <li>Sheet ID sudah benar di Apps Script CONFIG</li>
+                    <li>Sheet accessible (not private)</li>
+                    <li>Apps Script punya permission ke sheet</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h4>Step 4: Test Manual</h4>
+                <p>Test manual di browser:</p>
+                <div class="code-block">YOUR_APPS_SCRIPT_URL?action=getCOA</div>
+                <p>Harus return JSON response dengan success: true</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let appsScriptUrl = '';
+        
+        function saveConfig() {
+            const url = document.getElementById('appsScriptUrl').value;
+            
+            if (!url || !url.includes('script.google.com')) {
+                showResult('configResult', 'Error: URL Apps Script tidak valid', 'error');
+                return;
+            }
+            
+            appsScriptUrl = url;
+            localStorage.setItem('coa_apps_script_url', url);
+            showResult('configResult', 'Konfigurasi berhasil disimpan!', 'success');
+            
+            // Update status
+            document.getElementById('connectionStatus').textContent = 'CONFIGURED';
+            document.getElementById('connectionStatus').className = 'status-indicator status-testing';
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        function showResult(elementId, message, type) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.textContent = message;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+        
+        async function testBasicConnection() {
+            if (!appsScriptUrl) {
+                showResult('testResult', 'Error: Please configure Apps Script URL first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(appsScriptUrl + '?action=getCOA&test=1', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('connectionStatus').textContent = 'CONNECTED';
+                    document.getElementById('connectionStatus').className = 'status-indicator status-connected';
+                    
+                    showResult('testResult', 
+                        `✅ Connection SUCCESS!\n\n` +
+                        `Response:\n${JSON.stringify(data, null, 2)}`, 
+                        'success'
+                    );
+                } else {
+                    throw new Error(data.message || 'Unknown error');
+                }
+                
+            } catch (error) {
+                document.getElementById('connectionStatus').textContent = 'ERROR';
+                document.getElementById('connectionStatus').className = 'status-indicator status-disconnected';
+                
+                showResult('testResult', 
+                    `❌ Connection FAILED!\n\n` +
+                    `Error: ${error.message}\n\n` +
+                    `Troubleshooting:\n` +
+                    `1. Check Apps Script URL\n` +
+                    `2. Check deployment settings\n` +
+                    `3. Check CORS configuration\n` +
+                    `4. Check browser console for more details`, 
+                    'error'
+                );
+                
+                console.error('Connection test failed:', error);
+            }
+            
+            showLoading(false);
+        }
+        
+        async function testGetCOA() {
+            if (!appsScriptUrl) {
+                showResult('testResult', 'Error: Please configure Apps Script URL first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(appsScriptUrl + '?action=getCOA');
+                const data = await response.json();
+                
+                showResult('testResult', 
+                    `📊 GET COA Test Result:\n\n` +
+                    `Success: ${data.success}\n` +
+                    `Message: ${data.message}\n` +
+                    `Records Count: ${data.data ? data.data.length : 0}\n` +
+                    `Version: ${data.version}\n` +
+                    `Timestamp: ${data.timestamp}\n\n` +
+                    `Sample Data:\n${JSON.stringify(data.data ? data.data.slice(0, 2) : [], null, 2)}`, 
+                    data.success ? 'success' : 'error'
+                );
+                
+            } catch (error) {
+                showResult('testResult', 
+                    `❌ GET COA Failed!\n\nError: ${error.message}`, 
+                    'error'
+                );
+            }
+            
+            showLoading(false);
+        }
+        
+        async function testGetStats() {
+            if (!appsScriptUrl) {
+                showResult('testResult', 'Error: Please configure Apps Script URL first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch(appsScriptUrl + '?action=getStats');
+                const data = await response.json();
+                
+                showResult('testResult', 
+                    `📈 GET STATS Test Result:\n\n` +
+                    `Success: ${data.success}\n` +
+                    `Total Accounts: ${data.data ? data.data.totalAccounts : 0}\n` +
+                    `Active Accounts: ${data.data ? data.data.activeAccounts : 0}\n` +
+                    `Last Sync: ${data.data ? data.data.lastSync : 'Never'}\n\n` +
+                    `Category Counts:\n${JSON.stringify(data.data ? data.data.categoryCounts : {}, null, 2)}`, 
+                    data.success ? 'success' : 'error'
+                );
+                
+            } catch (error) {
+                showResult('testResult', 
+                    `❌ GET STATS Failed!\n\nError: ${error.message}`, 
+                    'error'
+                );
+            }
+            
+            showLoading(false);
+        }
+        
+        async function testAddAccount() {
+            if (!appsScriptUrl) {
+                showResult('testResult', 'Error: Please configure Apps Script URL first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            const testAccount = {
+                code: '9-9999',
+                name: 'Test Account Connection',
+                category: 'expenses',
+                type: 'detail',
+                description: 'Account created by connection tester',
+                status: 'active'
+            };
+            
+            try {
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'addAccount',
+                        account: testAccount
+                    })
+                });
+                
+                const data = await response.json();
+                
+                showResult('testResult', 
+                    `➕ ADD ACCOUNT Test Result:\n\n` +
+                    `Success: ${data.success}\n` +
+                    `Message: ${data.message}\n` +
+                    `Account Code: ${testAccount.code}\n` +
+                    `Account Name: ${testAccount.name}\n\n` +
+                    `Full Response:\n${JSON.stringify(data, null, 2)}`, 
+                    data.success ? 'success' : 'error'
+                );
+                
+                // Cleanup - delete test account
+                if (data.success) {
+                    setTimeout(() => deleteTestAccount(testAccount.code), 2000);
+                }
+                
+            } catch (error) {
+                showResult('testResult', 
+                    `❌ ADD ACCOUNT Failed!\n\nError: ${error.message}`, 
+                    'error'
+                );
+            }
+            
+            showLoading(false);
+        }
+        
+        async function deleteTestAccount(accountCode) {
+            try {
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'deleteAccount',
+                        accountCode: accountCode
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Test account cleanup:', data);
+                
+            } catch (error) {
+                console.error('Failed to cleanup test account:', error);
+            }
+        }
+        
+        async function testSyncOperation() {
+            if (!appsScriptUrl) {
+                showResult('advancedResult', 'Error: Please configure Apps Script URL first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            const testData = [
+                {
+                    code: '9-9998',
+                    name: 'Sync Test Account 1',
+                    category: 'expenses',
+                    type: 'detail',
+                    description: 'Test sync operation',
+                    status: 'active'
+                },
+                {
+                    code: '9-9997',
+                    name: 'Sync Test Account 2',
+                    category: 'expenses',
+                    type: 'detail',
+                    description: 'Test sync operation',
+                    status: 'active'
+                }
+            ];
+            
+            try {
+                const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'syncCOA',
+                        data: testData,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                
+                const data = await response.json();
+                
+                showResult('advancedResult', 
+                    `🔄 SYNC Test Result:\n\n` +
+                    `Success: ${data.success}\n` +
+                    `Message: ${data.message}\n` +
+                    `Records Synced: ${data.data ? data.data.recordsCount : 0}\n` +
+                    `Sync Timestamp: ${data.data ? data.data.syncTimestamp : 'N/A'}\n\n` +
+                    `Full Response:\n${JSON.stringify(data, null, 2)}`, 
+                    data.success ? 'success' : 'error'
+                );
+                
+            } catch (error) {
+                showResult('advancedResult', 
+                    `❌ SYNC Test Failed!\n\nError: ${error.message}`, 
+                    'error'
+                );
+            }
+            
+            showLoading(false);
+        }
+        
+        async function testErrorHandling() {
+            if (!appsScriptUrl) {
+                showResult('advancedResult', 'Error: Please configure Apps Script URL first', 'error');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                // Test with invalid action
+                const response = await fetch(appsScriptUrl + '?action=invalidAction');
+                const data = await response.json();
+                
+                showResult('advancedResult', 
+                    `❌ ERROR HANDLING Test Result:\n\n` +
+                    `This should return an error (which is good!):\n\n` +
+                    `Success: ${data.success}\n` +
+                    `Message: ${data.message}\n` +
+                    `Timestamp: ${data.timestamp}\n\n` +
+                    `✅ Error handling is working correctly!`, 
+                    'info'
+                );
+                
+            } catch (error) {
+                showResult('advancedResult', 
+                    `❌ ERROR HANDLING Test Failed!\n\nError: ${error.message}`, 
+                    'error'
+                );
+            }
+            
+            showLoading(false);
+        }
+        
+        async function runAllTests() {
+            showResult('advancedResult', '🧪 Running comprehensive tests...', 'info');
+            
+            const tests = [
+                { name: 'Basic Connection', func: testBasicConnection },
+                { name: 'Get COA', func: testGetCOA },
+                { name: 'Get Stats', func: testGetStats },
+                { name: 'Add Account', func: testAddAccount }
+            ];
+            
+            let results = '🧪 COMPREHENSIVE TEST RESULTS:\n\n';
+            
+            for (const test of tests) {
+                try {
+                    results += `Testing ${test.name}... `;
+                    showResult('advancedResult', results + 'In Progress', 'info');
+                    
+                    await test.func();
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Wait between tests
+                    
+                    results += '✅ PASSED\n';
+                } catch (error) {
+                    results += `❌ FAILED: ${error.message}\n`;
+                }
+            }
+            
+            results += '\n🎉 All tests completed!';
+            showResult('advancedResult', results, 'success');
+        }
+        
+        function clearResults() {
+            document.getElementById('testResult').style.display = 'none';
+            document.getElementById('advancedResult').style.display = 'none';
+            document.getElementById('configResult').style.display = 'none';
+        }
+        
+        // Load saved configuration
+        window.addEventListener('load', function() {
+            const savedUrl = localStorage.getItem('coa_apps_script_url');
+            if (savedUrl) {
+                document.getElementById('appsScriptUrl').value = savedUrl;
+                appsScriptUrl = savedUrl;
+                document.getElementById('connectionStatus').textContent = 'CONFIGURED';
+                document.getElementById('connectionStatus').className = 'status-indicator status-testing';
+            }
+        });
+        
+        // Manual test function untuk di browser console
+        window.manualTest = function(url) {
+            if (url) {
+                document.getElementById('appsScriptUrl').value = url;
+                saveConfig();
+            }
+            testBasicConnection();
+        };
+    </script>
+</body>
+</html>
