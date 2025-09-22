@@ -1,1 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Uji Koneksi Google Apps Script</title>
+</head>
+<body>
+    <h1>Uji Koneksi Google Apps Script</h1>
+    <p>Buka <b>Console</b> (tekan F12) untuk melihat hasilnya.</p>
+    <script>
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw9Yv2jYtzAFhTVfROt157PEF1FFADQiYpHiQuOXXwHRLVyndg8YdaWG5JE53Wmc/exec';
 
+        const testData = {
+            action: 'updateCOA',
+            data: [{
+                code: '9999',
+                name: 'Akun Uji Coba',
+                category: 'assets',
+                type: 'detail',
+                description: 'Akun ini dibuat untuk pengujian koneksi',
+                status: 'active'
+            }]
+        };
+
+        fetch(GOOGLE_SHEETS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(testData)
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('Hasil dari Google Apps Script:', result);
+            if (result.success) {
+                alert('Sinkronisasi BERHASIL! Cek log di Google Apps Script.');
+            } else {
+                alert('Sinkronisasi GAGAL: ' + result.error);
+            }
+        })
+        .catch(error => {
+            console.error('Terjadi kesalahan koneksi:', error);
+            alert('Error Koneksi: ' + error.message);
+        });
+    </script>
+</body>
+</html>
