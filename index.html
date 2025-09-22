@@ -673,20 +673,42 @@
         function syncToGoogleSheets() {
             showNotification('Memproses sync ke Google Sheets...');
             
-            // Simulate sync process
-            setTimeout(() => {
-                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-                updateStats();
-                showNotification('Data berhasil disync ke Google Sheets');
-                
-                // Track sync event
-                gtag('event', 'coa_sync', {
-                    event_category: 'Accounting',
-                    event_label: 'Google Sheets Sync',
-                    value: coaData.length
-                });
-            }, 2000);
+            // Siapkan data untuk Google Sheets
+    const sheetData = coaData.map(account => [
+        account.code,
+        account.name,
+        account.category,
+        account.type,
+        account.description || '',
+        account.status
+    ]);
+
+    const payload = {
+        action: 'updateCOA',
+        data: sheetData
+    };
+
+    // Bagian yang perlu diaktifkan
+    fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification('Data berhasil disync ke Google Sheets');
+            localStorage.setItem('coa_last_sync', new Date().toLocaleString());
+            updateStats();
+        } else {
+            showNotification('Gagal menyimpan ke Google Sheets: ' + result.error, true);
         }
+    })
+    .catch(error => {
+        showNotification('Error: ' + error.message, true);
+    });
 
         function exportCOAData() {
             const csvContent = "data:text/csv;charset=utf-8," 
