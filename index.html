@@ -514,7 +514,7 @@
         ];
 
         let editingIndex = -1;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxr9MPGFKierQOQ0SfEuBlc_K9wA8vMGRk2GejgXBqzc3sYSiQ3UpJOI58TZdYOiCM/exec'; // Ganti dengan URL Apps Script Anda
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxf9MPGFKlerQQQo5fEubic_K9wA8vMGRk2GejgXBqzc3sYSiQ3UpJOI58TZdYOiCM/exec'; // Ganti dengan URL Apps Script Anda
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -689,11 +689,11 @@
         }
 
         function exportCOAData() {
-		    const csvContent = "data:text/csv;charset=utf-8," 
-		        + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
-		        + coaData.map(acc => 
-		            `"${acc.code}","${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
-		        ).join("\n");
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
+                + coaData.map(acc => 
+                    `${acc.code},"${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
+                ).join("\n");
 
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
@@ -796,6 +796,56 @@
                     // Use default data if stored data is corrupted
                 }
             }
+            // Always ensure we have default data if localStorage is empty
+            if (!coaData || coaData.length === 0) {
+                // Initialize with default COA data
+                initializeDefaultCOA();
+            }
+        }
+
+        // Initialize default COA data
+        function initializeDefaultCOA() {
+            // Restore default coaData array (copy from original)
+            coaData = [
+                // Assets
+                { code: '1-0000', name: 'ASSETS', category: 'assets', type: 'header', description: 'Harta Koperasi', status: 'active' },
+                { code: '1-1000', name: 'Current Assets', category: 'assets', type: 'header', description: 'Harta Lancar', status: 'active' },
+                { code: '1-1001', name: 'Kas', category: 'assets', type: 'detail', description: 'Kas di tangan', status: 'active' },
+                { code: '1-1002', name: 'Bank', category: 'assets', type: 'detail', description: 'Rekening bank koperasi', status: 'active' },
+                { code: '1-1100', name: 'Piutang Anggota', category: 'assets', type: 'detail', description: 'Piutang kepada anggota', status: 'active' },
+                { code: '1-1200', name: 'Persediaan Barang', category: 'assets', type: 'detail', description: 'Stok barang dagangan', status: 'active' },
+                { code: '1-2000', name: 'Fixed Assets', category: 'assets', type: 'header', description: 'Harta Tetap', status: 'active' },
+                { code: '1-2001', name: 'Peralatan Koperasi', category: 'assets', type: 'detail', description: 'Peralatan dan perlengkapan', status: 'active' },
+
+                // Liabilities  
+                { code: '2-0000', name: 'LIABILITIES', category: 'liabilities', type: 'header', description: 'Kewajiban Koperasi', status: 'active' },
+                { code: '2-1001', name: 'Hutang Supplier', category: 'liabilities', type: 'detail', description: 'Hutang kepada pemasok', status: 'active' },
+                { code: '2-1100', name: 'Simpanan Pokok Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan pokok anggota', status: 'active' },
+                { code: '2-1200', name: 'Simpanan Wajib Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan wajib anggota', status: 'active' },
+                { code: '2-1300', name: 'Simpanan Sukarela Anggota', category: 'liabilities', type: 'detail', description: 'Simpanan sukarela anggota', status: 'active' },
+
+                // Equity
+                { code: '3-0000', name: 'EQUITY', category: 'equity', type: 'header', description: 'Modal Koperasi', status: 'active' },
+                { code: '3-1001', name: 'Modal Dasar Koperasi', category: 'equity', type: 'detail', description: 'Modal dasar koperasi', status: 'active' },
+                { code: '3-1100', name: 'SHU Tahun Berjalan', category: 'equity', type: 'detail', description: 'Sisa Hasil Usaha tahun berjalan', status: 'active' },
+                { code: '3-1200', name: 'SHU Ditahan', category: 'equity', type: 'detail', description: 'SHU yang ditahan', status: 'active' },
+
+                // Revenue
+                { code: '4-0000', name: 'REVENUE', category: 'revenue', type: 'header', description: 'Pendapatan Koperasi', status: 'active' },
+                { code: '4-1001', name: 'Penjualan Barang', category: 'revenue', type: 'detail', description: 'Pendapatan dari penjualan barang', status: 'active' },
+                { code: '4-1100', name: 'Pendapatan Jasa', category: 'revenue', type: 'detail', description: 'Pendapatan dari jasa koperasi', status: 'active' },
+                { code: '4-1200', name: 'Pendapatan Bunga Simpan Pinjam', category: 'revenue', type: 'detail', description: 'Pendapatan bunga pinjaman anggota', status: 'active' },
+
+                // Expenses
+                { code: '5-0000', name: 'EXPENSES', category: 'expenses', type: 'header', description: 'Beban Koperasi', status: 'active' },
+                { code: '5-1001', name: 'Harga Pokok Penjualan', category: 'expenses', type: 'detail', description: 'HPP barang dagangan', status: 'active' },
+                { code: '5-1100', name: 'Beban Operasional', category: 'expenses', type: 'detail', description: 'Beban operasional harian', status: 'active' },
+                { code: '5-1200', name: 'Beban Administrasi', category: 'expenses', type: 'detail', description: 'Beban administrasi dan umum', status: 'active' },
+                { code: '5-1300', name: 'Beban Bunga Simpanan', category: 'expenses', type: 'detail', description: 'Beban bunga untuk simpanan anggota', status: 'active' }
+            ];
+            
+            // Auto save the default data
+            autoSave();
         }
 
         // Override the incomplete saveAccount function
