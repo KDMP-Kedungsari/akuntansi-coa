@@ -514,7 +514,7 @@
         ];
 
         let editingIndex = -1;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz-JZozNU-wfxnz7TyqHLln7l1O2bnJd3rwaMNRPna1abJeYb9i0FSc2ZkA8I_nf1o/exec'; // Ganti dengan URL Apps Script Anda
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyAYXYrii2LxE8oNLgsM57xqDkFhSPEV9lcgbGvY7g-hjEUIJZjUZFHcwi1kE3CL4M/exec'; // Ganti dengan URL Apps Script Anda
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -672,22 +672,36 @@
 
         function syncToGoogleSheets() {
             showNotification('Memproses sync ke Google Sheets...');
-            
-            // Simulate sync process
-            setTimeout(() => {
-                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-                updateStats();
-                showNotification('Data berhasil disync ke Google Sheets');
-                
-                // Track sync event
-                gtag('event', 'coa_sync', {
-                    event_category: 'Accounting',
-                    event_label: 'Google Sheets Sync',
-                    value: coaData.length
-                });
-            }, 2000);
-        }
+    
+    // Perbarui fungsi ini untuk mengirim data ke Google Apps Script
+    // Menggunakan URL parameters (metode GET)
+    const payload = {
+        action: 'updateCOA',
+        data: coaData
+    };
+    
+    // Konversi payload ke string yang aman untuk URL
+    const queryString = `?payload=${encodeURIComponent(JSON.stringify(payload))}`;
 
+    fetch(GOOGLE_SHEETS_URL + queryString, {
+        method: 'GET'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showNotification('Data berhasil disimpan ke Google Sheets');
+            localStorage.setItem('coa_last_sync', new Date().toLocaleString());
+            updateStats();
+        } else {
+            showNotification('Gagal menyimpan ke Google Sheets: ' + (result.error || 'Unknown error'), true);
+        }
+    })
+    .catch(error => {
+        showNotification('Error koneksi: ' + error.message, true);
+        console.error('Sync error:', error);
+    });
+}
+		
         function exportCOAData() {
             const csvContent = "data:text/csv;charset=utf-8," 
                 + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
