@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COA Master - Koperasi Desa Merah Putih</title>
     
-    <!-- Google Analytics 4 (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-JE5G9Y7YPR"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -366,7 +365,6 @@
             </div>
 
             <div class="content-area">
-                <!-- Stats Overview -->
                 <div class="stats-grid" id="statsGrid">
                     <div class="stat-card">
                         <div class="stat-number" id="totalAccounts">0</div>
@@ -382,14 +380,12 @@
                     </div>
                 </div>
 
-                <!-- Search and Actions -->
                 <div class="search-section">
                     <input type="text" class="search-input" placeholder="Cari kode akun atau nama akun..." id="searchInput" onkeyup="searchAccounts()">
                     <button class="btn btn-primary" onclick="openAddModal()">➕ Tambah Akun</button>
                     <button class="btn btn-success" onclick="syncToGoogleSheets()">🔄 Sync ke Sheets</button>
                 </div>
 
-                <!-- COA Table -->
                 <table class="coa-table" id="coaTable">
                     <thead>
                         <tr>
@@ -402,14 +398,12 @@
                         </tr>
                     </thead>
                     <tbody id="coaTableBody">
-                        <!-- Data will be populated by JavaScript -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Add/Edit Modal -->
     <div id="coaModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
@@ -468,7 +462,6 @@
         </div>
     </div>
 
-    <!-- Notification -->
     <div id="notification" class="notification">
         <span id="notificationText"></span>
     </div>
@@ -514,11 +507,13 @@
         ];
 
         let editingIndex = -1;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzs-dAWYsrsGx8yVaqVnC23qOgQwzwyjO9Kqw-PGpQCZs_1ESsZ95gyQBLFFnZBrQ/exec'; // Ganti dengan URL Apps Script Anda
+        // PENTING: GANTI URL INI DENGAN URL TERBARU DARI DEPLOYMENT APPS SCRIPT ANDA
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwlwSXVknI-0Hxo3B_C1gET41bRLvaOMwvfi0uigMEW_RUfId8jGF3P49IIfmHvgw/exec'; 
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            loadCOAData();
+            loadFromStorage();
+            renderCOATable();
             updateStats();
         });
 
@@ -630,7 +625,15 @@
                 coaData.splice(index, 1);
                 renderCOATable();
                 updateStats();
+                autoSave();
                 showNotification('Akun berhasil dihapus');
+                
+                // Track delete event
+                gtag('event', 'coa_account_deleted', {
+                    event_category: 'Accounting',
+                    event_label: 'Account Deleted',
+                    value: 1
+                });
             }
         }
 
@@ -667,25 +670,21 @@
 
             renderCOATable();
             updateStats();
+            autoSave();
             closeModal();
+            
+            // Track COA management events
+            gtag('event', 'coa_account_saved', {
+                event_category: 'Accounting',
+                event_label: accountData.category,
+                value: 1
+            });
         }
 
         function syncToGoogleSheets() {
             showNotification('Memproses sync ke Google Sheets...');
-            
-            // Simulate sync process
-            setTimeout(() => {
-                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-                updateStats();
-                showNotification('Data berhasil disync ke Google Sheets');
-                
-                // Track sync event
-                gtag('event', 'coa_sync', {
-                    event_category: 'Accounting',
-                    event_label: 'Google Sheets Sync',
-                    value: coaData.length
-                });
-            }, 2000);
+            // Panggil fungsi yang benar untuk mengirim data
+            sendToGoogleSheets(coaData);
         }
 
         function exportCOAData() {
@@ -728,7 +727,6 @@
 
         // Google Sheets Integration Functions
         function sendToGoogleSheets(data) {
-            // This function will integrate with Google Apps Script
             const payload = {
                 action: 'updateCOA',
                 data: data,
@@ -742,7 +740,14 @@
                 },
                 body: JSON.stringify(payload)
             })
-            .then(response => response.json())
+            .then(response => {
+                // Pastikan respons dalam format JSON, meskipun statusnya error
+                if (!response.ok) {
+                    // Throw error to be caught by the catch block
+                    return response.json().then(err => { throw new Error(err.error || 'Unknown server error'); });
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.success) {
                     showNotification('Data berhasil disimpan ke Google Sheets');
@@ -848,73 +853,6 @@
             autoSave();
         }
 
-        // Override the incomplete saveAccount function
-        function saveAccount(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const accountData = {
-                code: formData.get('accountCode'),
-                name: formData.get('accountName'),
-                category: formData.get('accountCategory'),
-                type: formData.get('accountType'),
-                description: formData.get('description'),
-                status: formData.get('status')
-            };
-
-            // Validate unique code
-            if (editingIndex === -1 && coaData.some(acc => acc.code === accountData.code)) {
-                showNotification('Kode akun sudah digunakan', true);
-                return;
-            }
-
-            if (editingIndex === -1) {
-                coaData.push(accountData);
-                showNotification('Akun baru berhasil ditambahkan');
-            } else {
-                coaData[editingIndex] = accountData;
-                showNotification('Akun berhasil diupdate');
-            }
-
-            renderCOATable();
-            updateStats();
-            autoSave();
-            closeModal();
-            
-            // Track COA management events
-            gtag('event', 'coa_account_saved', {
-                event_category: 'Accounting',
-                event_label: accountData.category,
-                value: 1
-            });
-        }
-
-        // Override the incomplete deleteAccount function
-        function deleteAccount(index) {
-            if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
-                coaData.splice(index, 1);
-                renderCOATable();
-                updateStats();
-                autoSave();
-                showNotification('Akun berhasil dihapus');
-                
-                // Track delete event
-                gtag('event', 'coa_account_deleted', {
-                    event_category: 'Accounting',
-                    event_label: 'Account Deleted',
-                    value: 1
-                });
-            }
-        }
-
-        // Enhanced sync function with actual Google Sheets integration
-        function syncToGoogleSheets() {
-            showNotification('Memproses sync ke Google Sheets...');
-            
-            // Send actual data to Google Sheets
-            sendToGoogleSheets(coaData);
-        }
-
         // Initialize application
         document.addEventListener('DOMContentLoaded', function() {
             loadFromStorage();
@@ -960,6 +898,6 @@
                 return !coaData.some(acc => acc.code === code);
             }
         };
-		</script>
+    </script>
 </body>
 </html>
