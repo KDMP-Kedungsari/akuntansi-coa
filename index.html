@@ -705,11 +705,11 @@
         } else {
             showNotification('Gagal menyimpan ke Google Sheets: ' + result.error, true);
         }
-    })
-    .catch(error => {
-        showNotification('Error: ' + error.message, true);
-    });
-
+	    })
+	    .catch(error => {
+	        showNotification('Error: ' + error.message, true);
+	    });
+		}
         function exportCOAData() {
             const csvContent = "data:text/csv;charset=utf-8," 
                 + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
