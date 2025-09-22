@@ -319,6 +319,41 @@
             font-size: 0.9em;
         }
 
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .connection-online {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .connection-offline {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         @media (max-width: 768px) {
             .main-content {
                 grid-template-columns: 1fr;
@@ -358,7 +393,7 @@
                 <div class="menu-item" onclick="showSection('add')">➕ Tambah Akun</div>
                 <div class="menu-item" onclick="showSection('sync')">🔄 Sync Google Sheets</div>
                 <div class="menu-item" onclick="showSection('export')">📤 Export Data</div>
-                <div class="menu-item" onclick="showSection('settings')">⚙️ Pengaturan</div>
+                <div class="menu-item" onclick="showSection('test')">🔧 Test Koneksi</div>
                 
                 <h3 style="margin-top: 30px;">🔗 Navigasi</h3>
                 <a href="../anggota/" class="menu-item" style="text-decoration: none; display: block;">👥 Dashboard Anggota</a>
@@ -366,6 +401,11 @@
             </div>
 
             <div class="content-area">
+                <!-- Connection Status -->
+                <div id="connectionStatus" class="connection-status connection-offline">
+                    ⚠️ Status koneksi Google Sheets belum diperiksa - Klik "Test Koneksi"
+                </div>
+
                 <!-- Stats Overview -->
                 <div class="stats-grid" id="statsGrid">
                     <div class="stat-card">
@@ -386,7 +426,7 @@
                 <div class="search-section">
                     <input type="text" class="search-input" placeholder="Cari kode akun atau nama akun..." id="searchInput" onkeyup="searchAccounts()">
                     <button class="btn btn-primary" onclick="openAddModal()">➕ Tambah Akun</button>
-                    <button class="btn btn-success" onclick="syncToGoogleSheets()">🔄 Sync ke Sheets</button>
+                    <button class="btn btn-success" onclick="syncToGoogleSheets()" id="syncBtn">🔄 Sync ke Sheets</button>
                 </div>
 
                 <!-- COA Table -->
@@ -474,6 +514,9 @@
     </div>
 
     <script>
+        // PERHATIAN: Ganti URL ini dengan URL Google Apps Script Anda
+        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzcCg-gwHwCnhyKDKYX6-eE4R8HtxzfEt4uLU1Ai19EjI2nVqZUPsIeAyIYYp2MdVs/exec';
+        
         // Data COA Master - akan disimpan ke Google Sheets
         let coaData = [
             // Assets
@@ -514,12 +557,18 @@
         ];
 
         let editingIndex = -1;
-        const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyqHEIoQ115qZSWBGShalxxveuqe4PSzHjpFSpYxT4SipEj3pmKR-T_AD1wr4tgLaY/exec'; // Akan diisi dengan URL Apps Script
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage();
             loadCOAData();
             updateStats();
+            
+            // Track page view
+            gtag('event', 'page_view', {
+                page_title: 'COA Master System',
+                page_location: window.location.href
+            });
         });
 
         function loadCOAData() {
@@ -597,8 +646,8 @@
                 case 'export':
                     exportCOAData();
                     break;
-                case 'settings':
-                    showNotification('Pengaturan akan tersedia di versi mendatang');
+                case 'test':
+                    testGoogleSheetsConnection();
                     break;
             }
         }
@@ -630,7 +679,15 @@
                 coaData.splice(index, 1);
                 renderCOATable();
                 updateStats();
+                autoSave();
                 showNotification('Akun berhasil dihapus');
+                
+                // Track delete event
+                gtag('event', 'coa_account_deleted', {
+                    event_category: 'Accounting',
+                    event_label: 'Account Deleted',
+                    value: 1
+                });
             }
         }
 
@@ -638,172 +695,6 @@
             document.getElementById('coaModal').style.display = 'none';
         }
 
-        function saveAccount(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const accountData = {
-                code: formData.get('accountCode'),
-                name: formData.get('accountName'),
-                category: formData.get('accountCategory'),
-                type: formData.get('accountType'),
-                description: formData.get('description'),
-                status: formData.get('status')
-            };
-
-            // Validate unique code
-            if (editingIndex === -1 && coaData.some(acc => acc.code === accountData.code)) {
-                showNotification('Kode akun sudah digunakan', true);
-                return;
-            }
-
-            if (editingIndex === -1) {
-                coaData.push(accountData);
-                showNotification('Akun baru berhasil ditambahkan');
-            } else {
-                coaData[editingIndex] = accountData;
-                showNotification('Akun berhasil diupdate');
-            }
-
-            renderCOATable();
-            updateStats();
-            closeModal();
-        }
-
-        function syncToGoogleSheets() {
-            showNotification('Memproses sync ke Google Sheets...');
-            
-            // Siapkan data untuk Google Sheets
-    const sheetData = coaData.map(account => [
-        account.code,
-        account.name,
-        account.category,
-        account.type,
-        account.description || '',
-        account.status
-    ]);
-
-    const payload = {
-        action: 'updateCOA',
-        data: sheetData
-    };
-
-    // Bagian yang perlu diaktifkan
-    fetch(GOOGLE_SHEETS_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            showNotification('Data berhasil disync ke Google Sheets');
-            localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-            updateStats();
-        } else {
-            showNotification('Gagal menyimpan ke Google Sheets: ' + result.error, true);
-        }
-	    })
-	    .catch(error => {
-	        showNotification('Error: ' + error.message, true);
-	    });
-		}
-        function exportCOAData() {
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
-                + coaData.map(acc => 
-                    `${acc.code},"${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
-                ).join("\n");
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `COA_KDMP_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showNotification('Data COA berhasil diexport');
-        }
-
-        function showNotification(message, isError = false) {
-            const notification = document.getElementById('notification');
-            const notificationText = document.getElementById('notificationText');
-            
-            notificationText.textContent = message;
-            notification.className = `notification ${isError ? 'error' : ''} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // Modal click outside to close
-        window.onclick = function(event) {
-            const modal = document.getElementById('coaModal');
-            if (event.target === modal) {
-                closeModal();
-            }
-        }
-
-        // Google Sheets Integration Functions
-        function sendToGoogleSheets(data) {
-            // This function will integrate with Google Apps Script
-            // The actual implementation requires Apps Script WebApp URL
-            
-            const payload = {
-                action: 'updateCOA',
-                data: data,
-                timestamp: new Date().toISOString()
-            };
-
-            // Example fetch to Google Apps Script WebApp
-            
-            fetch(GOOGLE_SHEETS_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    showNotification('Data berhasil disimpan ke Google Sheets');
-                    localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-                    updateStats();
-                } else {
-                    showNotification('Gagal menyimpan ke Google Sheets: ' + result.error, true);
-                }
-            })
-            .catch(error => {
-                showNotification('Error: ' + error.message, true);
-            });
-            
-        }
-
-        // Auto-save to localStorage for offline capability
-        function autoSave() {
-            localStorage.setItem('coa_data', JSON.stringify(coaData));
-            localStorage.setItem('coa_last_update', new Date().toISOString());
-        }
-
-        // Load from localStorage on page load
-        function loadFromStorage() {
-            const savedData = localStorage.getItem('coa_data');
-            if (savedData) {
-                try {
-                    coaData = JSON.parse(savedData);
-                } catch (e) {
-                    console.error('Error loading data from storage:', e);
-                    // Use default data if stored data is corrupted
-                }
-            }
-        }
-
-        // Override the incomplete saveAccount function
         function saveAccount(event) {
             event.preventDefault();
             
@@ -844,69 +735,167 @@
             });
         }
 
-        // Override the incomplete deleteAccount function
-        function deleteAccount(index) {
-            if (confirm('Apakah Anda yakin ingin menghapus akun ini?')) {
-                coaData.splice(index, 1);
-                renderCOATable();
-                updateStats();
-                autoSave();
-                showNotification('Akun berhasil dihapus');
-                
-                // Track delete event
-                gtag('event', 'coa_account_deleted', {
-                    event_category: 'Accounting',
-                    event_label: 'Account Deleted',
-                    value: 1
-                });
+        function testGoogleSheetsConnection() {
+            showNotification('Testing koneksi ke Google Sheets...');
+            
+            if (GOOGLE_SHEETS_URL.includes('YOUR_SCRIPT_ID')) {
+                showNotification('❌ URL Google Apps Script belum dikonfigurasi!', true);
+                updateConnectionStatus(false, 'URL belum dikonfigurasi');
+                return;
+            }
+
+            fetch(GOOGLE_SHEETS_URL + '?test=1', {
+                method: 'GET',
+                mode: 'cors'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                if (result.success) {
+                    showNotification('✅ Koneksi Google Sheets berhasil!');
+                    updateConnectionStatus(true, 'Koneksi aktif');
+                } else {
+                    showNotification('❌ Test gagal: ' + result.error, true);
+                    updateConnectionStatus(false, result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Connection test error:', error);
+                showNotification('❌ Gagal terhubung: ' + error.message, true);
+                updateConnectionStatus(false, error.message);
+            });
+        }
+
+        function updateConnectionStatus(isOnline, message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            if (isOnline) {
+                statusDiv.className = 'connection-status connection-online';
+                statusDiv.innerHTML = '✅ Google Sheets: ' + message;
+            } else {
+                statusDiv.className = 'connection-status connection-offline';
+                statusDiv.innerHTML = '❌ Google Sheets: ' + message;
             }
         }
 
-        // Enhanced sync function with actual Google Sheets integration
         function syncToGoogleSheets() {
+            if (GOOGLE_SHEETS_URL.includes('YOUR_SCRIPT_ID')) {
+                showNotification('❌ Silakan konfigurasi URL Google Apps Script terlebih dahulu!', true);
+                return;
+            }
+
+            const syncBtn = document.getElementById('syncBtn');
+            syncBtn.innerHTML = '<span class="loading"></span>Syncing...';
+            syncBtn.disabled = true;
+            
             showNotification('Memproses sync ke Google Sheets...');
             
-            // Prepare data for Google Sheets
-            const sheetData = coaData.map(account => [
-                account.code,
-                account.name,
-                account.category,
-                account.type,
-                account.description || '',
-                account.status,
-                new Date().toISOString()
-            ]);
+            const payload = {
+                action: 'updateCOA',
+                data: coaData
+            };
 
-            // Simulate sync process (replace with actual Google Sheets integration)
-            setTimeout(() => {
-                // Send to Google Sheets (uncomment when Apps Script is ready)
-                // sendToGoogleSheets(sheetData);
-                
-                localStorage.setItem('coa_last_sync', new Date().toLocaleString());
-                updateStats();
-                showNotification('Data berhasil disync ke Google Sheets');
-                
-                // Track sync event
-                gtag('event', 'coa_sync', {
-                    event_category: 'Accounting',
-                    event_label: 'Google Sheets Sync',
-                    value: coaData.length
-                });
-            }, 2000);
+            fetch(GOOGLE_SHEETS_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(result => {
+                if (result.success) {
+                    showNotification(`✅ ${result.message} (${result.recordCount} records)`);
+                    localStorage.setItem('coa_last_sync', new Date().toLocaleString('id-ID'));
+                    updateStats();
+                    updateConnectionStatus(true, 'Sync berhasil');
+                    
+                    // Track sync event
+                    gtag('event', 'coa_sync', {
+                        event_category: 'Accounting',
+                        event_label: 'Google Sheets Sync',
+                        value: coaData.length
+                    });
+                } else {
+                    showNotification('❌ Gagal sync: ' + result.error, true);
+                    updateConnectionStatus(false, result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Sync error:', error);
+                showNotification('❌ Error sync: ' + error.message, true);
+                updateConnectionStatus(false, error.message);
+            })
+            .finally(() => {
+                syncBtn.innerHTML = '🔄 Sync ke Sheets';
+                syncBtn.disabled = false;
+            });
         }
 
-        // Initialize application
-        document.addEventListener('DOMContentLoaded', function() {
-            loadFromStorage();
-            loadCOAData();
-            updateStats();
+        function exportCOAData() {
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + "Kode Akun,Nama Akun,Kategori,Tipe,Deskripsi,Status\n"
+                + coaData.map(acc => 
+                    `${acc.code},"${acc.name}",${acc.category},${acc.type},"${acc.description || ''}",${acc.status}`
+                ).join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `COA_KDMP_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
             
-            // Track page view
-            gtag('event', 'page_view', {
-                page_title: 'COA Master System',
-                page_location: window.location.href
-            });
-        });
+            showNotification('Data COA berhasil diexport');
+        }
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            notification.className = `notification ${isError ? 'error' : ''} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // Auto-save to localStorage for offline capability
+        function autoSave() {
+            localStorage.setItem('coa_data', JSON.stringify(coaData));
+            localStorage.setItem('coa_last_update', new Date().toISOString());
+        }
+
+        // Load from localStorage on page load
+        function loadFromStorage() {
+            const savedData = localStorage.getItem('coa_data');
+            if (savedData) {
+                try {
+                    coaData = JSON.parse(savedData);
+                } catch (e) {
+                    console.error('Error loading data from storage:', e);
+                    // Use default data if stored data is corrupted
+                }
+            }
+        }
+
+        // Modal click outside to close
+        window.onclick = function(event) {
+            const modal = document.getElementById('coaModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(event) {
